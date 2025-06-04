@@ -1,15 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎁🤳PEQUE-EMPRENDEDORES🎂🎉</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Peque-Emprendedores</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header>
-    <h1>🎁🤳PEQUE-EMPRENDEDORES🎂🎉</h1>
-  </header>
+  <h1>🎁🤳PEQUE-EMPRENDEDORES🎂🎉</h1>
 
   <nav>
     <a href="#" id="link-inicio">Inicio</a>
@@ -20,9 +18,8 @@
   </nav>
 
   <div class="container">
-    <!-- SECCIÓN INICIO -->
     <section id="inicio" class="active">
-      <div class="product-card">
+      <div>
         <label for="category">Filtrar por categoría:</label>
         <select id="category">
           <option value="all">Todas</option>
@@ -34,44 +31,41 @@
       <div id="listaProductos"></div>
     </section>
 
-    <!-- SECCIÓN CATEGORÍAS -->
     <section id="categorias">
       <div class="product-card" id="card-comida">
-        <h2 class="product-title">Comida</h2>
+        <h2>Comida</h2>
         <div id="comidaList"></div>
       </div>
       <div class="product-card" id="card-ropa">
-        <h2 class="product-title">Ropa</h2>
+        <h2>Ropa</h2>
         <div id="ropaList"></div>
       </div>
       <div class="product-card" id="card-artesanias">
-        <h2 class="product-title">Artesanías</h2>
+        <h2>Artesanías</h2>
         <div id="artesaniasList"></div>
       </div>
     </section>
 
-    <!-- SECCIÓN PERFIL -->
     <section id="perfil"></section>
 
-    <!-- SECCIÓN LOGIN -->
     <section id="login">
       <div class="product-card">
-        <h2 class="product-title">Iniciar Sesión</h2>
+        <h2>Iniciar Sesión</h2>
         <form id="loginForm">
-          <input type="email" id="loginEmail" placeholder="Correo electrónico" required />
+          <input type="email" id="loginEmail" placeholder="Email" required />
           <input type="password" id="loginPassword" placeholder="Contraseña" required />
           <button type="submit" class="order-btn">Ingresar</button>
+          <p id="loginError" style="color: red;"></p>
         </form>
-        <p id="loginError" style="color: red;"></p>
       </div>
     </section>
   </div>
 
   <script src="js/init.js"></script>
-  <script src="js/auth.js"></script>
   <script src="js/productos.js"></script>
-  <script src="js/categorias.js"></script>
+  <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/categorias.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

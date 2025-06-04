@@ -4,7 +4,7 @@
  * Clave de almacenamiento de NOTIFICACIONES
  * Estructura en localStorage (key = NOTIF_KEY):
  * {
- *   "emailUsuario1": [ { producto, cantidad, comprador, fecha }, ... ],
+ *   "emailUsuario1": [ { producto, cantidad, comprador, fecha, cliente, telefono, direccion, detalle, metodoPago }, ... ],
  *   "emailUsuario2": [ ... ],
  *   ...
  * }
@@ -58,9 +58,10 @@ function calificarProducto(nombre, rating) {
  * Retorna true si se logró restar (pedido exitoso), false si no había stock suficiente.
  * @param {string} nombre 
  * @param {number} cantidad 
+ * @param {Object} datosPedido - Incluye cliente, telefono, direccion, detalle, metodoPago
  * @returns {boolean}
  */
-function procesarPedido(nombre, cantidad) {
+function procesarPedido(nombre, cantidad, datosPedido) {
   const productos = obtenerProductos();
   const idx = productos.findIndex(p => p.nombre === nombre);
   if (idx > -1 && productos[idx].cantidad >= cantidad) {
@@ -68,19 +69,24 @@ function procesarPedido(nombre, cantidad) {
     productos[idx].cantidad -= cantidad;
     guardarProductos(productos);
 
-    // —– NUEVO: generar notificación para el "owner" del producto
+    // —– MODIFICADO: generar notificación con datos completos
     const ownerEmail = productos[idx].creatorEmail; // campo agregado al crear producto
     const comprador = localStorage.getItem("userName") || "Invitado";
     if (ownerEmail) {
       // obtener objeto completo de notificaciones (o {} si no existe)
       const todasNotifs = JSON.parse(localStorage.getItem(NOTIF_KEY)) || {};
       const notifsUsuario = todasNotifs[ownerEmail] || [];
-      // agrego la notificación
+      // agrego la notificación con datos completos
       notifsUsuario.push({
         producto: nombre,
         cantidad: cantidad,
         comprador: comprador,
-        fecha: new Date().toISOString()
+        fecha: new Date().toISOString(),
+        cliente: datosPedido.cliente,
+        telefono: datosPedido.telefono,
+        direccion: datosPedido.direccion,
+        detalle: datosPedido.detalle || "",
+        metodoPago: datosPedido.metodoPago
       });
       // guardo de vuelta
       todasNotifs[ownerEmail] = notifsUsuario;
@@ -103,7 +109,6 @@ function filtrarPorCategoria(val) {
   return productos.filter(p => p.categoria === val);
 }
 
-
 /** 
  * —– NUEVO: Función para obtener el arreglo de notificaciones de un usuario
  * @param {string} emailUsuario 
@@ -120,4 +125,22 @@ function obtenerNotificaciones(emailUsuario) {
  */
 function guardarNotificaciones(objNotifs) {
   localStorage.setItem(NOTIF_KEY, JSON.stringify(objNotifs));
+}
+
+/**
+ * —– NUEVO: Elimina una notificación específica de un usuario
+ * @param {string} emailUsuario 
+ * @param {number} index - Índice de la notificación a eliminar
+ */
+function eliminarNotificacion(emailUsuario, index) {
+  const todasNotifs = JSON.parse(localStorage.getItem(NOTIF_KEY)) || {};
+  const notifsUsuario = todasNotifs[emailUsuario] || [];
+  if (index >= 0 && index < notifsUsuario.length) {
+    notifsUsuario.splice(index, 1);
+    todasNotifs[emailUsuario] = notifsUsuario;
+    if (notifsUsuario.length === 0) {
+      delete todasNotifs[emailUsuario]; // Eliminar la clave si no hay notificaciones
+    }
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(todasNotifs));
+  }
 }

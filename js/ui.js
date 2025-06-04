@@ -209,7 +209,7 @@ function mostrarOrderForm(p) {
   inputCantidad.type = "number";
   inputCantidad.name = "cantidad";
   inputCantidad.min = 1;
-  inputCantidad.max = p.cantidad; // NUEVO: Limita la cantidad al stock disponible
+  inputCantidad.max = p.cantidad; // Limita la cantidad al stock disponible
   inputCantidad.required = true;
 
   // Mensaje de error para validación de stock
@@ -262,7 +262,7 @@ function mostrarOrderForm(p) {
     labelTelefono, inputTelefono,
     labelDireccion, inputDireccion,
     labelCantidad, inputCantidad,
-    stockError, // NUEVO: Mensaje de error de stock
+    stockError,
     labelDetalle, textareaDetalle,
     labelPago, selectPago,
     botonGuardar
@@ -276,7 +276,14 @@ function mostrarOrderForm(p) {
       stockError.textContent = `La cantidad solicitada (${cantidadSolicitada}) excede el stock disponible (${p.cantidad}).`;
       return;
     }
-    const exito = procesarPedido(p.nombre, cantidadSolicitada);
+    const datosPedido = {
+      cliente: inputCliente.value.trim(),
+      telefono: inputTelefono.value.trim(),
+      direccion: inputDireccion.value.trim(),
+      detalle: textareaDetalle.value.trim(),
+      metodoPago: selectPago.value
+    };
+    const exito = procesarPedido(p.nombre, cantidadSolicitada, datosPedido);
     cont.innerHTML = ""; // borramos el form
     const resDiv = document.createElement("div");
     if (exito) {
@@ -326,6 +333,15 @@ function mostrarPerfilEnPantalla() {
   // Limpiar sección primero
   perfilSec.innerHTML = "";
 
+  // —– NUEVO: Contenedor para el ícono de notificaciones y el desplegable
+  const notificationContainer = document.createElement("div");
+  notificationContainer.className = "notification-container";
+  notificationContainer.innerHTML = `
+    <span id="notification-icon" style="cursor: pointer;">🔔</span>
+    <div id="notification-dropdown" class="notification-dropdown" style="display: none;"></div>
+  `;
+  perfilSec.appendChild(notificationContainer);
+
   // Bloque de perfil básico
   const perfilInfo = document.createElement("div");
   perfilInfo.className = "product-card";
@@ -354,16 +370,30 @@ function mostrarPerfilEnPantalla() {
   const notifsCont = document.createElement("div");
   notifsCont.innerHTML = `<h2 class="product-title">Notificaciones de Pedidos</h2>`;
   if (notifs.length > 0) {
-    notifs.forEach(n => {
+    notifs.forEach((n, index) => {
       const div = document.createElement("div");
       div.className = "product-card";
       div.innerHTML = `
         <p><strong>Producto:</strong> ${n.producto}</p>
         <p><strong>Cantidad:</strong> ${n.cantidad}</p>
         <p><strong>Comprador:</strong> ${n.comprador}</p>
+        <p><strong>Cliente:</strong> ${n.cliente}</p>
+        <p><strong>Teléfono:</strong> ${n.telefono}</p>
+        <p><strong>Dirección:</strong> ${n.direccion}</p>
+        <p><strong>Detalle:</strong> ${n.detalle || "Sin detalle"}</p>
+        <p><strong>Método de Pago:</strong> ${n.metodoPago}</p>
         <p><strong>Fecha:</strong> ${new Date(n.fecha).toLocaleString()}</p>
+        <button class="order-btn delete-notification" data-index="${index}">Eliminar</button>
       `;
       notifsCont.appendChild(div);
+    });
+    notifsCont.querySelectorAll(".delete-notification").forEach(button => {
+      button.addEventListener("click", () => {
+        const index = parseInt(button.getAttribute("data-index"), 10);
+        eliminarNotificacion(userEmail, index);
+        mostrarPerfilEnPantalla(); // Recargar vista de perfil
+        mostrarNotificacionesDropdown(); // Actualizar desplegable
+      });
     });
   } else {
     const p = document.createElement("p");
@@ -467,4 +497,63 @@ function mostrarPerfilEnPantalla() {
       recargarVistaProductos();
     }
   });
+
+  // —– NUEVO: Listener para el ícono de notificaciones
+  const notificationIcon = document.getElementById("notification-icon");
+  if (notificationIcon) {
+    notificationIcon.addEventListener("click", () => {
+      const dropdown = document.getElementById("notification-dropdown");
+      if (dropdown.style.display === "none") {
+        mostrarNotificacionesDropdown();
+        dropdown.style.display = "block";
+      } else {
+        dropdown.style.display = "none";
+      }
+    });
+  }
+}
+
+/**
+ * Muestra las notificaciones en el contenedor desplegable
+ */
+function mostrarNotificacionesDropdown() {
+  const dropdown = document.getElementById("notification-dropdown");
+  dropdown.innerHTML = `<h2 class="product-title">Notificaciones</h2>`;
+  const userEmail = getUserEmail();
+  const notifs = obtenerNotificaciones(userEmail);
+
+  if (!userEmail) {
+    dropdown.innerHTML += `<p class="product-card">Debes iniciar sesión para ver tus notificaciones.</p>`;
+    return;
+  }
+
+  if (notifs.length > 0) {
+    notifs.forEach((n, index) => {
+      const div = document.createElement("div");
+      div.className = "product-card";
+      div.innerHTML = `
+        <p><strong>Producto:</strong> ${n.producto}</p>
+        <p><strong>Cantidad:</strong> ${n.cantidad}</p>
+        <p><strong>Comprador:</strong> ${n.comprador}</p>
+        <p><strong>Cliente:</strong> ${n.cliente}</p>
+        <p><strong>Teléfono:</strong> ${n.telefono}</p>
+        <p><strong>Dirección:</strong> ${n.direccion}</p>
+        <p><strong>Detalle:</strong> ${n.detalle || "Sin detalle"}</p>
+        <p><strong>Método de Pago:</strong> ${n.metodoPago}</p>
+        <p><strong>Fecha:</strong> ${new Date(n.fecha).toLocaleString()}</p>
+        <button class="order-btn delete-notification" data-index="${index}">Eliminar</button>
+      `;
+      dropdown.appendChild(div);
+    });
+    dropdown.querySelectorAll(".delete-notification").forEach(button => {
+      button.addEventListener("click", () => {
+        const index = parseInt(button.getAttribute("data-index"), 10);
+        eliminarNotificacion(userEmail, index);
+        mostrarPerfilEnPantalla(); // Recargar vista de perfil
+        mostrarNotificacionesDropdown(); // Actualizar desplegable
+      });
+    });
+  } else {
+    dropdown.innerHTML += `<p class="product-card">No tienes nuevas notificaciones.</p>`;
+  }
 }

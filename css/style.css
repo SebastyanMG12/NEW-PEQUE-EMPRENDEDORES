@@ -209,9 +209,48 @@ section.active {
   display: block;
 }
 
-/* NUEVO: Estilo para mensaje de error de stock */
+/* Estilo para mensaje de error de stock */
 .stock-error {
   color: red;
   margin-bottom: 15px;
   font-size: 14px;
+}
+
+/* —– MODIFICADO: Estilos para el contenedor de notificaciones */
+.notification-container {
+  position: relative;
+  text-align: right;
+  margin-bottom: 20px;
+}
+
+.notification-dropdown {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+  max-width: 400px;
+  width: 90%;
+  z-index: 100;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.notification-dropdown .product-card {
+  margin-bottom: 10px;
+}
+
+.notification-dropdown .product-card:last-child {
+  margin-bottom: 0;
+}
+
+/* Estilo para el botón de eliminación */
+.delete-notification {
+  background-color: #d32f2f;
+}
+
+.delete-notification:hover {
+  background-color: #b71c1c;
 }
