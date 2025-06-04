@@ -216,7 +216,7 @@ section.active {
   font-size: 14px;
 }
 
-/* —– MODIFICADO: Estilos para el contenedor de notificaciones */
+/* Estilo para el contenedor de notificaciones */
 .notification-container {
   position: relative;
   text-align: right;
@@ -253,4 +253,20 @@ section.active {
 
 .delete-notification:hover {
   background-color: #b71c1c;
+}
+
+/* —– NUEVO: Estilos para el input de búsqueda */
+#inicio label[for="search"] {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+}
+
+#inicio input#search {
+  width: 100%;
+  padding: 12px;
+  border-radius: 20px;
+  border: 2px solid #071739;
+  font-size: 16px;
+  background-color: #fff;
 }

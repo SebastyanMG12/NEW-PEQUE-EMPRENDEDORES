@@ -71,10 +71,17 @@ function crearTarjeta(p) {
 function renderProductos(productos) {
   const cont = document.getElementById("listaProductos");
   cont.innerHTML = "";
-  productos.forEach(p => {
-    const tarjeta = crearTarjeta(p);
-    cont.appendChild(tarjeta);
-  });
+  if (productos.length === 0) {
+    const noResults = document.createElement("div");
+    noResults.className = "product-card";
+    noResults.innerHTML = "<p>No se encontraron productos.</p>";
+    cont.appendChild(noResults);
+  } else {
+    productos.forEach(p => {
+      const tarjeta = crearTarjeta(p);
+      cont.appendChild(tarjeta);
+    });
+  }
 }
 
 /**
@@ -333,7 +340,7 @@ function mostrarPerfilEnPantalla() {
   // Limpiar sección primero
   perfilSec.innerHTML = "";
 
-  // —– NUEVO: Contenedor para el ícono de notificaciones y el desplegable
+  // Contenedor para el ícono de notificaciones y el desplegable
   const notificationContainer = document.createElement("div");
   notificationContainer.className = "notification-container";
   notificationContainer.innerHTML = `
@@ -477,7 +484,7 @@ function mostrarPerfilEnPantalla() {
       empresaDescripcion: "Registrado por usuario",
       rating: [],
       image: null,
-      creatorEmail: getUserEmail()  // —– NUEVO: para saber quién lo creó
+      creatorEmail: getUserEmail()  // para saber quién lo creó
     };
 
     if (fileInput.files.length > 0) {
@@ -498,7 +505,7 @@ function mostrarPerfilEnPantalla() {
     }
   });
 
-  // —– NUEVO: Listener para el ícono de notificaciones
+  // Listener para el ícono de notificaciones
   const notificationIcon = document.getElementById("notification-icon");
   if (notificationIcon) {
     notificationIcon.addEventListener("click", () => {

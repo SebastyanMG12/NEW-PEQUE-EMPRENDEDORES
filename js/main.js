@@ -57,7 +57,8 @@ document.getElementById("loginForm").addEventListener("submit", (e) => {
 // 5) Listener para el filtro de categoría en la sección "Inicio"
 document.getElementById("category").addEventListener("change", (e) => {
   const val = e.target.value;
-  const filtrados = filtrarPorCategoria(val);
+  const searchTerm = document.getElementById("search").value.trim();
+  const filtrados = buscarProductos(searchTerm, val);
   renderProductos(filtrados);
 });
 
@@ -81,4 +82,12 @@ document.getElementById("card-artesanias").addEventListener("mouseover", () => {
 });
 document.getElementById("card-artesanias").addEventListener("mouseout", () => {
   clearCategoryItems("artesaniasList");
+});
+
+// —– NUEVO: Listener para el input de búsqueda
+document.getElementById("search").addEventListener("input", (e) => {
+  const searchTerm = e.target.value.trim();
+  const category = document.getElementById("category").value;
+  const filtrados = buscarProductos(searchTerm, category);
+  renderProductos(filtrados);
 });

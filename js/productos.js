@@ -69,7 +69,7 @@ function procesarPedido(nombre, cantidad, datosPedido) {
     productos[idx].cantidad -= cantidad;
     guardarProductos(productos);
 
-    // —– MODIFICADO: generar notificación con datos completos
+    // generar notificación con datos completos
     const ownerEmail = productos[idx].creatorEmail; // campo agregado al crear producto
     const comprador = localStorage.getItem("userName") || "Invitado";
     if (ownerEmail) {
@@ -110,7 +110,7 @@ function filtrarPorCategoria(val) {
 }
 
 /** 
- * —– NUEVO: Función para obtener el arreglo de notificaciones de un usuario
+ * Función para obtener el arreglo de notificaciones de un usuario
  * @param {string} emailUsuario 
  * @returns {Array} lista de notificaciones (puede estar vacía)
  */
@@ -120,7 +120,7 @@ function obtenerNotificaciones(emailUsuario) {
 }
 
 /** 
- * —– NUEVO: ( opcional ) Si quisieras sobrescribir todo el objeto de notificaciones:
+ * ( opcional ) Si quisieras sobrescribir todo el objeto de notificaciones:
  * @param {Object} objNotifs 
  */
 function guardarNotificaciones(objNotifs) {
@@ -128,7 +128,7 @@ function guardarNotificaciones(objNotifs) {
 }
 
 /**
- * —– NUEVO: Elimina una notificación específica de un usuario
+ * Elimina una notificación específica de un usuario
  * @param {string} emailUsuario 
  * @param {number} index - Índice de la notificación a eliminar
  */
@@ -143,4 +143,28 @@ function eliminarNotificacion(emailUsuario, index) {
     }
     localStorage.setItem(NOTIF_KEY, JSON.stringify(todasNotifs));
   }
+}
+
+/**
+ * —– NUEVO: Busca productos por término de búsqueda y categoría.
+ * @param {string} searchTerm - Término de búsqueda
+ * @param {string} category - Categoría seleccionada ("all" o específica)
+ * @returns {Array} Lista de productos filtrados
+ */
+function buscarProductos(searchTerm, category) {
+  let productos = obtenerProductos();
+  // Filtrar por categoría primero
+  if (category !== "all") {
+    productos = productos.filter(p => p.categoria === category);
+  }
+  // Si no hay término de búsqueda, retornar productos filtrados por categoría
+  if (!searchTerm) {
+    return productos;
+  }
+  // Filtrar por nombre o descripción (insensible a mayúsculas)
+  const term = searchTerm.toLowerCase();
+  return productos.filter(p => 
+    p.nombre.toLowerCase().includes(term) || 
+    p.descripcion.toLowerCase().includes(term)
+  );
 }
