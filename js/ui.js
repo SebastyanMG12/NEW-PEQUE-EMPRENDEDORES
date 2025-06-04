@@ -59,7 +59,35 @@ function crearTarjeta(p) {
     mostrarModalDetalles(p);
   });
 
-  info.append(titulo, desc, elab, estrellas, botonOrdenar);
+  // Botón Favorito
+  const userEmail = getUserEmail();
+  const favoritos = userEmail ? obtenerFavoritos(userEmail) : [];
+  const esFavorito = favoritos.includes(p.nombre);
+  const botonFavorito = document.createElement("button");
+  botonFavorito.className = `order-btn favorite-btn ${esFavorito ? "favorited" : ""}`;
+  botonFavorito.textContent = esFavorito ? "★ Quitar de Favoritos" : "☆ Agregar a Favoritos";
+  botonFavorito.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!userEmail) {
+      alert("Debes iniciar sesión para agregar favoritos.");
+      return;
+    }
+    if (esFavorito) {
+      eliminarFavorito(userEmail, p.nombre);
+      botonFavorito.textContent = "☆ Agregar a Favoritos";
+      botonFavorito.classList.remove("favorited");
+    } else {
+      agregarFavorito(userEmail, p.nombre);
+      botonFavorito.textContent = "★ Quitar de Favoritos";
+      botonFavorito.classList.add("favorited");
+    }
+    // Actualizar la vista de perfil si está abierta
+    if (document.getElementById("perfil").classList.contains("active")) {
+      mostrarPerfilEnPantalla();
+    }
+  });
+
+  info.append(titulo, desc, elab, estrellas, botonOrdenar, botonFavorito);
   card.append(imgCont, info);
   return card;
 }
@@ -317,7 +345,7 @@ function recargarVistaProductos() {
 }
 
 /**
- * —– NUEVO: Muestra un modal con un formulario prellenado para editar un producto.
+ * Muestra un modal con un formulario prellenado para editar un producto.
  * @param {Object} p - Objeto producto
  */
 function mostrarFormularioEditarProducto(p) {
@@ -561,19 +589,30 @@ function mostrarPerfilEnPantalla() {
   const userEmail = getUserEmail();
   const listaAll = obtenerProductos();
   const productosPropios = listaAll.filter(p => p.creatorEmail === userEmail);
-  const notifs = obtenerNotificaciones(userEmail);
 
   // Limpiar sección primero
   perfilSec.innerHTML = "";
 
-  // Contenedor para el ícono de notificaciones y el desplegable
+  // Contenedor para el ícono de notificaciones y favoritos
+  const topContainer = document.createElement("div");
+  topContainer.className = "top-container";
+
+  // Ícono de notificaciones
   const notificationContainer = document.createElement("div");
   notificationContainer.className = "notification-container";
   notificationContainer.innerHTML = `
     <span id="notification-icon" style="cursor: pointer;">🔔</span>
-    <div id="notification-dropdown" class="notification-dropdown" style="display: none;"></div>
   `;
-  perfilSec.appendChild(notificationContainer);
+
+  // Ícono de favoritos
+  const favoritesContainer = document.createElement("div");
+  favoritesContainer.className = "favorites-container";
+  favoritesContainer.innerHTML = `
+    <span id="favorites-icon" style="cursor: pointer;">♥</span>
+  `;
+
+  topContainer.append(notificationContainer, favoritesContainer);
+  perfilSec.appendChild(topContainer);
 
   // Bloque de perfil básico
   const perfilInfo = document.createElement("div");
@@ -588,7 +627,7 @@ function mostrarPerfilEnPantalla() {
 
   // Bloque: Mis Productos
   const productosCont = document.createElement("div");
-  productosCont.innerHTML = `<hOutlet title="Mis Productos" class="product-title">Mis Productos</h2>`;
+  productosCont.innerHTML = `<h2 class="product-title">Mis Productos</h2>`;
   if (productosPropios.length > 0) {
     productosPropios.forEach(p => {
       const card = crearTarjeta(p);
@@ -607,42 +646,6 @@ function mostrarPerfilEnPantalla() {
     productosCont.innerHTML += `<p>Aún no has creado ningún producto.</p>`;
   }
   perfilSec.appendChild(productosCont);
-
-  // Bloque: Notificaciones
-  const notifsCont = document.createElement("div");
-  notifsCont.innerHTML = `<h2 class="product-title">Notificaciones de Pedidos</h2>`;
-  if (notifs.length > 0) {
-    notifs.forEach((n, index) => {
-      const div = document.createElement("div");
-      div.className = "product-card";
-      div.innerHTML = `
-        <p><strong>Producto:</strong> ${n.producto}</p>
-        <p><strong>Cantidad:</strong> ${n.cantidad}</p>
-        <p><strong>Comprador:</strong> ${n.comprador}</p>
-        <p><strong>Cliente:</strong> ${n.cliente}</p>
-        <p><strong>Teléfono:</strong> ${n.telefono}</p>
-        <p><strong>Dirección:</strong> ${n.direccion}</p>
-        <p><strong>Detalle:</strong> ${n.detalle || "Sin detalle"}</p>
-        <p><strong>Método de Pago:</strong> ${n.metodoPago}</p>
-        <p><strong>Fecha:</strong> ${new Date(n.fecha).toLocaleString()}</p>
-        <button class="order-btn delete-notification" data-index="${index}">Eliminar</button>
-      `;
-      notifsCont.appendChild(div);
-    });
-    notifsCont.querySelectorAll(".delete-notification").forEach(button => {
-      button.addEventListener("click", () => {
-        const index = parseInt(button.getAttribute("data-index"), 10);
-        eliminarNotificacion(userEmail, index);
-        mostrarPerfilEnPantalla(); // Recargar vista de perfil
-        mostrarNotificacionesDropdown(); // Actualizar desplegable
-      });
-    });
-  } else {
-    const p = document.createElement("p");
-    p.textContent = "No tienes nuevas notificaciones.";
-    notifsCont.appendChild(p);
-  }
-  perfilSec.appendChild(notifsCont);
 
   // Bloque: Crear Producto
   const crearProd = document.createElement("div");
@@ -744,36 +747,59 @@ function mostrarPerfilEnPantalla() {
   const notificationIcon = document.getElementById("notification-icon");
   if (notificationIcon) {
     notificationIcon.addEventListener("click", () => {
-      const dropdown = document.getElementById("notification-dropdown");
-      if (dropdown.style.display === "none") {
-        mostrarNotificacionesDropdown();
-        dropdown.style.display = "block";
-      } else {
-        dropdown.style.display = "none";
-      }
+      mostrarNotificacionesDropdown();
+    });
+  }
+
+  // Listener para el ícono de favoritos
+  const favoritesIcon = document.getElementById("favorites-icon");
+  if (favoritesIcon) {
+    favoritesIcon.addEventListener("click", () => {
+      mostrarFavoritosDropdown();
     });
   }
 }
 
 /**
- * Muestra las notificaciones en el contenedor desplegable
+ * Muestra las notificaciones en un modal
  */
 function mostrarNotificacionesDropdown() {
-  const dropdown = document.getElementById("notification-dropdown");
-  dropdown.innerHTML = `<h2 class="product-title">Notificaciones</h2>`;
+  // Si ya hay un modal abierto, lo cerramos
+  const existente = document.getElementById("modal");
+  if (existente) existente.remove();
+
+  // Fondo del modal
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+
+  // Contenido del modal
+  const contenido = document.createElement("div");
+  contenido.className = "modal-content";
+
+  // Título
+  const h2 = document.createElement("h2");
+  h2.textContent = "Notificaciones";
+
+  contenido.appendChild(h2);
+
   const userEmail = getUserEmail();
   const notifs = obtenerNotificaciones(userEmail);
 
   if (!userEmail) {
-    dropdown.innerHTML += `<p class="product-card">Debes iniciar sesión para ver tus notificaciones.</p>`;
-    return;
-  }
-
-  if (notifs.length > 0) {
+    const p = document.createElement("p");
+    p.className = "notification-card";
+    p.textContent = "Debes iniciar sesión para ver tus notificaciones.";
+    contenido.appendChild(p);
+  } else if (notifs.length > 0) {
     notifs.forEach((n, index) => {
       const div = document.createElement("div");
-      div.className = "product-card";
-      div.innerHTML = `
+      div.className = "notification-card";
+      const infoDiv = document.createElement("div");
+      infoDiv.className = "notification-info";
+      infoDiv.innerHTML = `
         <p><strong>Producto:</strong> ${n.producto}</p>
         <p><strong>Cantidad:</strong> ${n.cantidad}</p>
         <p><strong>Comprador:</strong> ${n.comprador}</p>
@@ -783,19 +809,144 @@ function mostrarNotificacionesDropdown() {
         <p><strong>Detalle:</strong> ${n.detalle || "Sin detalle"}</p>
         <p><strong>Método de Pago:</strong> ${n.metodoPago}</p>
         <p><strong>Fecha:</strong> ${new Date(n.fecha).toLocaleString()}</p>
-        <button class="order-btn delete-notification" data-index="${index}">Eliminar</button>
       `;
-      dropdown.appendChild(div);
-    });
-    dropdown.querySelectorAll(".delete-notification").forEach(button => {
-      button.addEventListener("click", () => {
-        const index = parseInt(button.getAttribute("data-index"), 10);
-        eliminarNotificacion(userEmail, index);
-        mostrarPerfilEnPantalla(); // Recargar vista de perfil
-        mostrarNotificacionesDropdown(); // Actualizar desplegable
+      const buttonDiv = document.createElement("div");
+      buttonDiv.className = "notification-actions";
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "order-btn delete-notification";
+      deleteButton.setAttribute("data-index", index);
+      deleteButton.textContent = "Eliminar";
+      buttonDiv.appendChild(deleteButton);
+      div.appendChild(infoDiv);
+      div.appendChild(buttonDiv);
+
+      div.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cerrarModal(); // Cerrar el modal actual
+        mostrarOrderForm(obtenerProductos().find(p => p.nombre === n.producto));
       });
+      deleteButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt(e.target.getAttribute("data-index"), 10);
+        eliminarNotificacion(userEmail, idx);
+        cerrarModal();
+        mostrarPerfilEnPantalla(); // Recargar vista de perfil
+        mostrarNotificacionesDropdown(); // Reabrir el modal con notificaciones actualizadas
+      });
+      contenido.appendChild(div);
     });
   } else {
-    dropdown.innerHTML += `<p class="product-card">No tienes nuevas notificaciones.</p>`;
+    const p = document.createElement("p");
+    p.className = "notification-card";
+    p.textContent = "No tienes nuevas notificaciones.";
+    contenido.appendChild(p);
   }
+
+  // Botón Cerrar
+  const botonCerrar = document.createElement("button");
+  botonCerrar.className = "order-btn";
+  botonCerrar.textContent = "Cerrar";
+  botonCerrar.addEventListener("click", () => cerrarModal());
+  contenido.appendChild(botonCerrar);
+
+  modal.appendChild(contenido);
+  document.body.appendChild(modal);
+
+  // Enfocar el botón Cerrar
+  botonCerrar.focus();
+}
+
+/**
+ * Muestra los productos favoritos en un modal
+ */
+function mostrarFavoritosDropdown() {
+  // Si ya hay un modal abierto, lo cerramos
+  const existente = document.getElementById("modal");
+  if (existente) existente.remove();
+
+  // Fondo del modal
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+
+  // Contenido del modal
+  const contenido = document.createElement("div");
+  contenido.className = "modal-content";
+
+  // Título
+  const h2 = document.createElement("h2");
+  h2.textContent = "Mis Favoritos";
+
+  contenido.appendChild(h2);
+
+  const userEmail = getUserEmail();
+  const favoritos = obtenerFavoritos(userEmail);
+  const listaAll = obtenerProductos();
+
+  if (!userEmail) {
+    const p = document.createElement("p");
+    p.className = "product-card";
+    p.textContent = "Debes iniciar sesión para ver tus favoritos.";
+    contenido.appendChild(p);
+  } else if (favoritos.length > 0) {
+    favoritos.forEach(nombre => {
+      const p = listaAll.find(prod => prod.nombre === nombre);
+      if (p) {
+        const div = document.createElement("div");
+        div.className = "product-card";
+        div.innerHTML = `
+          <div class="image-container">
+            <img src="${p.image || 'assets/placeholder.png'}" alt="${p.image ? p.nombre : 'sin imagen'}">
+          </div>
+          <div class="info">
+            <h2 class="product-title">${p.nombre}</h2>
+            <p><strong>Vendedor:</strong> ${p.vendedor}</p>
+            <p><strong>Descripción:</strong> ${p.descripcion}</p>
+            <p><strong>Elaboración:</strong> ${p.elaboracion}</p>
+            <p><strong>Precio:</strong> $${p.precio}</p>
+            <p><strong>Unidades Disponibles:</strong> ${p.cantidad}</p>
+            <p><strong>Pago:</strong> ${p.pago}</p>
+          </div>
+        `;
+        div.addEventListener("click", (e) => {
+          e.stopPropagation();
+          cerrarModal(); // Cerrar el modal actual
+          mostrarOrderForm(p);
+        });
+        // Botón Quitar de Favoritos
+        const botonQuitar = document.createElement("button");
+        botonQuitar.className = "order-btn favorite-btn favorited";
+        botonQuitar.textContent = "★ Quitar de Favoritos";
+        botonQuitar.addEventListener("click", (e) => {
+          e.stopPropagation();
+          eliminarFavorito(userEmail, p.nombre);
+          cerrarModal();
+          mostrarPerfilEnPantalla(); // Recargar vista de perfil
+          mostrarFavoritosDropdown(); // Reabrir el modal con favoritos actualizados
+        });
+        div.appendChild(botonQuitar);
+        contenido.appendChild(div);
+      }
+    });
+  } else {
+    const p = document.createElement("p");
+    p.className = "product-card";
+    p.textContent = "No tienes productos favoritos.";
+    contenido.appendChild(p);
+  }
+
+  // Botón Cerrar
+  const botonCerrar = document.createElement("button");
+  botonCerrar.className = "order-btn";
+  botonCerrar.textContent = "Cerrar";
+  botonCerrar.addEventListener("click", () => cerrarModal());
+  contenido.appendChild(botonCerrar);
+
+  modal.appendChild(contenido);
+  document.body.appendChild(modal);
+
+  // Enfocar el botón Cerrar
+  botonCerrar.focus();
 }

@@ -12,6 +12,17 @@
 const NOTIF_KEY = "notifications";
 
 /**
+ * —– NUEVO: Clave de almacenamiento de FAVORITOS
+ * Estructura en localStorage (key = FAVORITES_KEY):
+ * {
+ *   "emailUsuario1": [ "nombreProducto1", "nombreProducto2", ... ],
+ *   "emailUsuario2": [ ... ],
+ *   ...
+ * }
+ */
+const FAVORITES_KEY = "favorites";
+
+/**
  * Retorna el arreglo completo de productos desde localStorage.
  * @returns {Array} lista de objetos producto
  */
@@ -195,4 +206,54 @@ function editarProducto(nombre, nuevosDatos) {
     return true;
   }
   return false;
+}
+
+/**
+ * —– NUEVO: Agrega un producto a la lista de favoritos de un usuario.
+ * @param {string} emailUsuario - Email del usuario
+ * @param {string} nombreProducto - Nombre del producto a agregar
+ * @returns {boolean} - true si se agregó, false si ya estaba en favoritos
+ */
+function agregarFavorito(emailUsuario, nombreProducto) {
+  const favoritos = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || {};
+  const listaFavoritos = favoritos[emailUsuario] || [];
+  if (listaFavoritos.includes(nombreProducto)) {
+    return false; // Ya está en favoritos
+  }
+  listaFavoritos.push(nombreProducto);
+  favoritos[emailUsuario] = listaFavoritos;
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoritos));
+  return true;
+}
+
+/**
+ * —– NUEVO: Elimina un producto de la lista de favoritos de un usuario.
+ * @param {string} emailUsuario - Email del usuario
+ * @param {string} nombreProducto - Nombre del producto a eliminar
+ * @returns {boolean} - true si se eliminó, false si no estaba en favoritos
+ */
+function eliminarFavorito(emailUsuario, nombreProducto) {
+  const favoritos = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || {};
+  const listaFavoritos = favoritos[emailUsuario] || [];
+  const index = listaFavoritos.indexOf(nombreProducto);
+  if (index === -1) {
+    return false; // No está en favoritos
+  }
+  listaFavoritos.splice(index, 1);
+  favoritos[emailUsuario] = listaFavoritos;
+  if (listaFavoritos.length === 0) {
+    delete favoritos[emailUsuario]; // Eliminar la clave si no hay favoritos
+  }
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favoritos));
+  return true;
+}
+
+/**
+ * —– NUEVO: Obtiene la lista de nombres de productos favoritos de un usuario.
+ * @param {string} emailUsuario - Email del usuario
+ * @returns {Array} - Lista de nombres de productos favoritos
+ */
+function obtenerFavoritos(emailUsuario) {
+  const favoritos = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || {};
+  return favoritos[emailUsuario] || [];
 }

@@ -49,6 +49,7 @@ document.getElementById("loginForm").addEventListener("submit", (e) => {
     errP.textContent = "";
     mostrarPerfilEnPantalla();
     showSection("perfil");
+    recargarVistaProductos(); // —– NUEVO: Actualizar productos para reflejar favoritos
   } else {
     errP.textContent = "Usuario o contraseña inválidos.";
   }
