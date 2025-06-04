@@ -294,36 +294,85 @@ function mostrarPerfilEnPantalla() {
     return;
   }
 
-  // Si el usuario está logueado, armamos su tarjeta de perfil y el form para crear producto
-  perfilSec.innerHTML = `
-    <div class="product-card">
-      <h2 class="product-title">Mi Perfil</h2>
-      <p><strong>Nombre:</strong> ${nombre}</p>
-      <p><strong>Email:</strong> ${getUserEmail()}</p>
-      <button id="btn-logout" class="order-btn">Cerrar sesión</button>
-    </div>
-    <div class="product-card">
-      <h2 class="product-title">Crear Producto</h2>
-      <form id="productFormPerfil">
-        <input type="text" id="nombreProducto" placeholder="Nombre del Producto" required />
-        <textarea id="descripcionProducto" placeholder="Descripción" required></textarea>
-        <textarea id="elaboracionProducto" placeholder="Cómo se elabora" required></textarea>
-        <input type="number" id="precioProducto" placeholder="Precio" required />
-        <input type="number" id="cantidadProducto" placeholder="Cantidad Disponible" required />
-        <input type="text" id="vendedorProducto" placeholder="Vendedor o Empresa" required />
-        <input type="text" id="pagoProducto" placeholder="Medios de Pago" required />
-        <select id="categoriaProducto" required>
-          <option value="comida">Comida</option>
-          <option value="ropa">Ropa</option>
-          <option value="artesanias">Artesanías</option>
-        </select>
-        <label for="imagenProducto">Imagen del producto:</label>
-        <input type="file" id="imagenProducto" accept="image/*" />
-        <button type="submit" class="order-btn">Publicar Producto</button>
-        <p id="productFormError" style="color: red;"></p>
-      </form>
-    </div>
+  const userEmail = getUserEmail();
+  const listaAll = obtenerProductos();
+  const productosPropios = listaAll.filter(p => p.creatorEmail === userEmail);
+  const notifs = obtenerNotificaciones(userEmail);
+
+  // Limpiar sección primero
+  perfilSec.innerHTML = "";
+
+  // Bloque de perfil básico
+  const perfilInfo = document.createElement("div");
+  perfilInfo.className = "product-card";
+  perfilInfo.innerHTML = `
+    <h2 class="product-title">Mi Perfil</h2>
+    <p><strong>Nombre:</strong> ${nombre}</p>
+    <p><strong>Email:</strong> ${getUserEmail()}</p>
+    <button id="btn-logout" class="order-btn">Cerrar sesión</button>
   `;
+  perfilSec.appendChild(perfilInfo);
+
+  // Bloque: Mis Productos
+  const productosCont = document.createElement("div");
+  productosCont.innerHTML = `<h2 class="product-title">Mis Productos</h2>`;
+  if (productosPropios.length > 0) {
+    productosPropios.forEach(p => {
+      const card = crearTarjeta(p);
+      productosCont.appendChild(card);
+    });
+  } else {
+    productosCont.innerHTML += `<p>Aún no has creado ningún producto.</p>`;
+  }
+  perfilSec.appendChild(productosCont);
+
+  // Bloque: Notificaciones
+  const notifsCont = document.createElement("div");
+  notifsCont.innerHTML = `<h2 class="product-title">Notificaciones de Pedidos</h2>`;
+  if (notifs.length > 0) {
+    notifs.forEach(n => {
+      const div = document.createElement("div");
+      div.className = "product-card";
+      div.innerHTML = `
+        <p><strong>Producto:</strong> ${n.producto}</p>
+        <p><strong>Cantidad:</strong> ${n.cantidad}</p>
+        <p><strong>Comprador:</strong> ${n.comprador}</p>
+        <p><strong>Fecha:</strong> ${new Date(n.fecha).toLocaleString()}</p>
+      `;
+      notifsCont.appendChild(div);
+    });
+  } else {
+    const p = document.createElement("p");
+    p.textContent = "No tienes nuevas notificaciones.";
+    notifsCont.appendChild(p);
+  }
+  perfilSec.appendChild(notifsCont);
+
+  // Bloque: Crear Producto
+  const crearProd = document.createElement("div");
+  crearProd.className = "product-card";
+  crearProd.innerHTML = `
+    <h2 class="product-title">Crear Producto</h2>
+    <form id="productFormPerfil">
+      <input type="text" id="nombreProducto" placeholder="Nombre del Producto" required />
+      <textarea id="descripcionProducto" placeholder="Descripción" required></textarea>
+      <textarea id="elaboracionProducto" placeholder="Cómo se elabora" required></textarea>
+      <input type="number" id="precioProducto" placeholder="Precio" required />
+      <input type="number" id="cantidadProducto" placeholder="Cantidad Disponible" required />
+      <input type="text" id="vendedorProducto" placeholder="Vendedor o Empresa" required />
+      <input type="text" id="pagoProducto" placeholder="Medios de Pago" required />
+      <select id="categoriaProducto" required>
+        <option value="comida">Comida</option>
+        <option value="ropa">Ropa</option>
+        <option value="artesanias">Artesanías</option>
+      </select>
+      <label for="imagenProducto">Imagen del producto:</label>
+      <input type="file" id="imagenProducto" accept="image/*" />
+      <button type="submit" class="order-btn">Publicar Producto</button>
+      <p id="productFormError" style="color: red;"></p>
+    </form>
+  `;
+  perfilSec.appendChild(crearProd);
 
   // Event listener para cerrar sesión
   document.getElementById("btn-logout").addEventListener("click", () => {
@@ -361,7 +410,7 @@ function mostrarPerfilEnPantalla() {
       return;
     }
 
-    // Construimos el objeto producto
+    // Construimos el objeto producto (agregamos creatorEmail)
     const productoNuevo = {
       nombre: nombreProd,
       descripcion,
@@ -373,7 +422,8 @@ function mostrarPerfilEnPantalla() {
       categoria,
       empresaDescripcion: "Registrado por usuario",
       rating: [],
-      image: null
+      image: null,
+      creatorEmail: getUserEmail()  // —– NUEVO: para saber quién lo creó
     };
 
     if (fileInput.files.length > 0) {
