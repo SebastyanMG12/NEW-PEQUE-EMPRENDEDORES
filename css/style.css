@@ -208,3 +208,10 @@ section {
 section.active {
   display: block;
 }
+
+/* NUEVO: Estilo para mensaje de error de stock */
+.stock-error {
+  color: red;
+  margin-bottom: 15px;
+  font-size: 14px;
+}

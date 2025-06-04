@@ -134,7 +134,7 @@ function mostrarModalDetalles(p) {
   const botonPedido = document.createElement("button");
   botonPedido.className = "order-btn";
   botonPedido.textContent = "Tomar Pedido";
-  botonPedido.addEventListener("click", () => mostrarOrderForm(p.nombre));
+  botonPedido.addEventListener("click", () => mostrarOrderForm(p));
 
   const botonCerrar = document.createElement("button");
   botonCerrar.className = "order-btn";
@@ -165,9 +165,9 @@ function cerrarModal() {
 
 /**
  * Muestra dentro del modal el formulario de pedido para el producto de nombre “nombreProd”.
- * @param {string} nombreProd 
+ * @param {Object} p 
  */
-function mostrarOrderForm(nombreProd) {
+function mostrarOrderForm(p) {
   const cont = document.getElementById("orderFormContainer");
   cont.innerHTML = "";
 
@@ -209,7 +209,26 @@ function mostrarOrderForm(nombreProd) {
   inputCantidad.type = "number";
   inputCantidad.name = "cantidad";
   inputCantidad.min = 1;
+  inputCantidad.max = p.cantidad; // NUEVO: Limita la cantidad al stock disponible
   inputCantidad.required = true;
+
+  // Mensaje de error para validación de stock
+  const stockError = document.createElement("p");
+  stockError.id = "stockError";
+  stockError.className = "stock-error";
+  stockError.style.color = "red";
+
+  // Validación en tiempo real para la cantidad
+  inputCantidad.addEventListener("input", () => {
+    const cantidad = parseInt(inputCantidad.value, 10);
+    if (cantidad > p.cantidad) {
+      stockError.textContent = `La cantidad solicitada (${cantidad}) excede el stock disponible (${p.cantidad}).`;
+      inputCantidad.setCustomValidity("Cantidad inválida");
+    } else {
+      stockError.textContent = "";
+      inputCantidad.setCustomValidity("");
+    }
+  });
 
   // Detalle Pedido
   const labelDetalle = document.createElement("label");
@@ -243,16 +262,21 @@ function mostrarOrderForm(nombreProd) {
     labelTelefono, inputTelefono,
     labelDireccion, inputDireccion,
     labelCantidad, inputCantidad,
+    stockError, // NUEVO: Mensaje de error de stock
     labelDetalle, textareaDetalle,
     labelPago, selectPago,
     botonGuardar
   );
 
-  // Al enviar el form, llama a procesarPedido (definida en productos.js)
+  // Al enviar el form, valida el stock antes de procesar
   form.addEventListener("submit", function(e) {
     e.preventDefault();
     const cantidadSolicitada = parseInt(inputCantidad.value, 10);
-    const exito = procesarPedido(nombreProd, cantidadSolicitada);
+    if (cantidadSolicitada > p.cantidad) {
+      stockError.textContent = `La cantidad solicitada (${cantidadSolicitada}) excede el stock disponible (${p.cantidad}).`;
+      return;
+    }
+    const exito = procesarPedido(p.nombre, cantidadSolicitada);
     cont.innerHTML = ""; // borramos el form
     const resDiv = document.createElement("div");
     if (exito) {
