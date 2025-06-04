@@ -168,3 +168,31 @@ function buscarProductos(searchTerm, category) {
     p.descripcion.toLowerCase().includes(term)
   );
 }
+
+/**
+ * —– NUEVO: Actualiza un producto existente en localStorage basado en su nombre.
+ * @param {string} nombre - Nombre del producto a editar
+ * @param {Object} nuevosDatos - Objeto con los nuevos datos del producto
+ */
+function editarProducto(nombre, nuevosDatos) {
+  const productos = obtenerProductos();
+  const idx = productos.findIndex(p => p.nombre === nombre);
+  if (idx > -1) {
+    // Mantener rating, image y creatorEmail del producto original
+    productos[idx] = {
+      ...productos[idx], // Conserva propiedades no editadas
+      nombre: nuevosDatos.nombre,
+      descripcion: nuevosDatos.descripcion,
+      elaboracion: nuevosDatos.elaboracion,
+      precio: nuevosDatos.precio,
+      cantidad: nuevosDatos.cantidad,
+      vendedor: nuevosDatos.vendedor,
+      pago: nuevosDatos.pago,
+      categoria: nuevosDatos.categoria,
+      empresaDescripcion: nuevosDatos.empresaDescripcion || productos[idx].empresaDescripcion
+    };
+    guardarProductos(productos);
+    return true;
+  }
+  return false;
+}

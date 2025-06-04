@@ -317,6 +317,232 @@ function recargarVistaProductos() {
 }
 
 /**
+ * —– NUEVO: Muestra un modal con un formulario prellenado para editar un producto.
+ * @param {Object} p - Objeto producto
+ */
+function mostrarFormularioEditarProducto(p) {
+  // Si ya hay un modal abierto, lo cerramos
+  const existente = document.getElementById("modal");
+  if (existente) existente.remove();
+
+  // Fondo del modal
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+
+  // Contenido del modal
+  const contenido = document.createElement("div");
+  contenido.className = "modal-content";
+
+  // Título
+  const h2 = document.createElement("h2");
+  h2.textContent = `Editar Producto: ${p.nombre}`;
+
+  // Formulario de edición
+  const form = document.createElement("form");
+  form.id = "editProductForm";
+  form.className = "order-form";
+
+  // Nombre
+  const labelNombre = document.createElement("label");
+  labelNombre.setAttribute("for", "editNombreProducto");
+  labelNombre.textContent = "Nombre del Producto:";
+  const inputNombre = document.createElement("input");
+  inputNombre.type = "text";
+  inputNombre.id = "editNombreProducto";
+  inputNombre.value = p.nombre;
+  inputNombre.required = true;
+
+  // Descripción
+  const labelDesc = document.createElement("label");
+  labelDesc.setAttribute("for", "editDescripcionProducto");
+  labelDesc.textContent = "Descripción:";
+  const textareaDesc = document.createElement("textarea");
+  textareaDesc.id = "editDescripcionProducto";
+  textareaDesc.value = p.descripcion;
+  textareaDesc.required = true;
+
+  // Elaboración
+  const labelElab = document.createElement("label");
+  labelElab.setAttribute("for", "editElaboracionProducto");
+  labelElab.textContent = "Cómo se elabora:";
+  const textareaElab = document.createElement("textarea");
+  textareaElab.id = "editElaboracionProducto";
+  textareaElab.value = p.elaboracion;
+  textareaElab.required = true;
+
+  // Precio
+  const labelPrecio = document.createElement("label");
+  labelPrecio.setAttribute("for", "editPrecioProducto");
+  labelPrecio.textContent = "Precio:";
+  const inputPrecio = document.createElement("input");
+  inputPrecio.type = "number";
+  inputPrecio.id = "editPrecioProducto";
+  inputPrecio.value = p.precio;
+  inputPrecio.required = true;
+
+  // Cantidad
+  const labelCantidad = document.createElement("label");
+  labelCantidad.setAttribute("for", "editCantidadProducto");
+  labelCantidad.textContent = "Cantidad Disponible:";
+  const inputCantidad = document.createElement("input");
+  inputCantidad.type = "number";
+  inputCantidad.id = "editCantidadProducto";
+  inputCantidad.value = p.cantidad;
+  inputCantidad.required = true;
+
+  // Vendedor
+  const labelVendedor = document.createElement("label");
+  labelVendedor.setAttribute("for", "editVendedorProducto");
+  labelVendedor.textContent = "Vendedor o Empresa:";
+  const inputVendedor = document.createElement("input");
+  inputVendedor.type = "text";
+  inputVendedor.id = "editVendedorProducto";
+  inputVendedor.value = p.vendedor;
+  inputVendedor.required = true;
+
+  // Medios de Pago
+  const labelPago = document.createElement("label");
+  labelPago.setAttribute("for", "editPagoProducto");
+  labelPago.textContent = "Medios de Pago:";
+  const inputPago = document.createElement("input");
+  inputPago.type = "text";
+  inputPago.id = "editPagoProducto";
+  inputPago.value = p.pago;
+  inputPago.required = true;
+
+  // Categoría
+  const labelCategoria = document.createElement("label");
+  labelCategoria.setAttribute("for", "editCategoriaProducto");
+  labelCategoria.textContent = "Categoría:";
+  const selectCategoria = document.createElement("select");
+  selectCategoria.id = "editCategoriaProducto";
+  selectCategoria.required = true;
+  ["comida", "ropa", "artesanias"].forEach(cat => {
+    const option = document.createElement("option");
+    option.value = cat;
+    option.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+    if (cat === p.categoria) option.selected = true;
+    selectCategoria.appendChild(option);
+  });
+
+  // Imagen
+  const labelImagen = document.createElement("label");
+  labelImagen.setAttribute("for", "editImagenProducto");
+  labelImagen.textContent = "Imagen del producto:";
+  const inputImagen = document.createElement("input");
+  inputImagen.type = "file";
+  inputImagen.id = "editImagenProducto";
+  inputImagen.accept = "image/*";
+
+  // Mensaje de error
+  const errorP = document.createElement("p");
+  errorP.id = "editProductFormError";
+  errorP.style.color = "red";
+
+  // Botón Guardar
+  const botonGuardar = document.createElement("button");
+  botonGuardar.type = "submit";
+  botonGuardar.className = "order-btn";
+  botonGuardar.textContent = "Guardar Cambios";
+
+  // Botón Cerrar
+  const botonCerrar = document.createElement("button");
+  botonCerrar.className = "order-btn";
+  botonCerrar.textContent = "Cerrar";
+  botonCerrar.addEventListener("click", () => cerrarModal());
+
+  // Agregar elementos al formulario
+  form.append(
+    labelNombre, inputNombre,
+    labelDesc, textareaDesc,
+    labelElab, textareaElab,
+    labelPrecio, inputPrecio,
+    labelCantidad, inputCantidad,
+    labelVendedor, inputVendedor,
+    labelPago, inputPago,
+    labelCategoria, selectCategoria,
+    labelImagen, inputImagen,
+    errorP,
+    botonGuardar,
+    botonCerrar
+  );
+
+  // Manejar el envío del formulario
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const nuevosDatos = {
+      nombre: inputNombre.value.trim(),
+      descripcion: textareaDesc.value.trim(),
+      elaboracion: textareaElab.value.trim(),
+      precio: Number(inputPrecio.value),
+      cantidad: Number(inputCantidad.value),
+      vendedor: inputVendedor.value.trim(),
+      pago: inputPago.value.trim(),
+      categoria: selectCategoria.value,
+      empresaDescripcion: "Registrado por usuario" // Mantener el valor por defecto
+    };
+
+    // Validaciones básicas
+    if (!nuevosDatos.nombre || !nuevosDatos.descripcion || !nuevosDatos.elaboracion ||
+        nuevosDatos.precio <= 0 || nuevosDatos.cantidad <= 0 ||
+        !nuevosDatos.vendedor || !nuevosDatos.pago) {
+      errorP.textContent = "Por favor completa todos los campos correctamente.";
+      return;
+    }
+
+    // Verificar duplicado de nombre (excluyendo el producto actual)
+    const todos = obtenerProductos();
+    const existe = todos.some(p2 => p2.nombre.toLowerCase() === nuevosDatos.nombre.toLowerCase() && p2.nombre !== p.nombre);
+    if (existe) {
+      errorP.textContent = "Ya existe un producto con ese nombre.";
+      return;
+    }
+
+    // Manejar la imagen
+    const fileInput = inputImagen;
+    if (fileInput.files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        nuevosDatos.image = reader.result;
+        const exito = editarProducto(p.nombre, nuevosDatos);
+        if (exito) {
+          alert("¡Producto actualizado!");
+          cerrarModal();
+          mostrarPerfilEnPantalla();
+          recargarVistaProductos();
+        } else {
+          errorP.textContent = "Error al actualizar el producto.";
+        }
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      // Si no se subió una nueva imagen, mantener la imagen existente
+      nuevosDatos.image = p.image;
+      const exito = editarProducto(p.nombre, nuevosDatos);
+      if (exito) {
+        alert("¡Producto actualizado!");
+        cerrarModal();
+        mostrarPerfilEnPantalla();
+        recargarVistaProductos();
+      } else {
+        errorP.textContent = "Error al actualizar el producto.";
+      }
+    }
+  });
+
+  // Agregar al modal
+  contenido.append(h2, form);
+  modal.appendChild(contenido);
+  document.body.appendChild(modal);
+
+  // Enfocar el primer input
+  inputNombre.focus();
+}
+
+/**
  * Muestra el contenido de “Mi Perfil” (perfil y formulario de creación de producto).
  * Si no hay usuario logueado, muestra el mensaje “Debes iniciar sesión...”
  */
@@ -362,10 +588,19 @@ function mostrarPerfilEnPantalla() {
 
   // Bloque: Mis Productos
   const productosCont = document.createElement("div");
-  productosCont.innerHTML = `<h2 class="product-title">Mis Productos</h2>`;
+  productosCont.innerHTML = `<hOutlet title="Mis Productos" class="product-title">Mis Productos</h2>`;
   if (productosPropios.length > 0) {
     productosPropios.forEach(p => {
       const card = crearTarjeta(p);
+      // Agregar botón "Editar" solo para productos propios
+      const botonEditar = document.createElement("button");
+      botonEditar.className = "order-btn";
+      botonEditar.textContent = "Editar";
+      botonEditar.addEventListener("click", (e) => {
+        e.stopPropagation(); // Evitar que se abra el modal de detalles
+        mostrarFormularioEditarProducto(p);
+      });
+      card.querySelector(".info").appendChild(botonEditar);
       productosCont.appendChild(card);
     });
   } else {
