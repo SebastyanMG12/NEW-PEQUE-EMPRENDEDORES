@@ -113,7 +113,7 @@ function renderProductos(productos) {
 }
 
 /**
- * Muestra un modal con detalles completos de p, acciones de calificación y pedido.
+ * Muestra un modal con detalles completos de p, acciones de calificación, pedido y añadir al carrito.
  * @param {Object} p 
  */
 function mostrarModalDetalles(p) {
@@ -165,11 +165,65 @@ function mostrarModalDetalles(p) {
     starsContainer.appendChild(span);
   });
 
-  // Botones: “Tomar Pedido” y “Cerrar”
+  // Input para cantidad a añadir al carrito
+  const labelCantidadCarrito = document.createElement("label");
+  labelCantidadCarrito.setAttribute("for", "cantidadCarrito");
+  labelCantidadCarrito.textContent = "Cantidad para Carrito:";
+  const inputCantidadCarrito = document.createElement("input");
+  inputCantidadCarrito.type = "number";
+  inputCantidadCarrito.id = "cantidadCarrito";
+  inputCantidadCarrito.name = "cantidadCarrito";
+  inputCantidadCarrito.min = 1;
+  inputCantidadCarrito.max = p.cantidad;
+  inputCantidadCarrito.value = 1;
+  inputCantidadCarrito.required = true;
+
+  // Mensaje de error para validación
+  const carritoError = document.createElement("p");
+  carritoError.id = "carritoError";
+  carritoError.className = "stock-error";
+  carritoError.style.color = "red";
+
+  // Validación en tiempo real para la cantidad
+  inputCantidadCarrito.addEventListener("input", () => {
+    const cantidad = parseInt(inputCantidadCarrito.value, 10);
+    if (cantidad > p.cantidad) {
+      carritoError.textContent = `La cantidad solicitada (${cantidad}) excede el stock disponible (${p.cantidad}).`;
+      inputCantidadCarrito.setCustomValidity("Cantidad inválida");
+    } else {
+      carritoError.textContent = "";
+      inputCantidadCarrito.setCustomValidity("");
+    }
+  });
+
+  // Botones: “Tomar Pedido”, “Añadir al Carrito” y “Cerrar”
   const botonPedido = document.createElement("button");
   botonPedido.className = "order-btn";
   botonPedido.textContent = "Tomar Pedido";
   botonPedido.addEventListener("click", () => mostrarOrderForm(p));
+
+  // Botón para añadir al carrito
+  const botonCarrito = document.createElement("button");
+  botonCarrito.className = "order-btn";
+  botonCarrito.textContent = "Añadir al Carrito";
+  botonCarrito.addEventListener("click", () => {
+    const cantidad = parseInt(inputCantidadCarrito.value, 10);
+    if (cantidad > p.cantidad) {
+      carritoError.textContent = `La cantidad solicitada (${cantidad}) excede el stock disponible (${p.cantidad}).`;
+      return;
+    }
+    const userEmail = getUserEmail();
+    const exito = agregarAlCarrito(userEmail, p.nombre, cantidad);
+    if (exito) {
+      alert(`¡${cantidad} unidad(es) de ${p.nombre} añadida(s) al carrito!`);
+      cerrarModal();
+      if (document.getElementById("perfil").classList.contains("active")) {
+        mostrarPerfilEnPantalla(); // Actualizar ícono del carrito
+      }
+    } else {
+      carritoError.textContent = "No se pudo añadir al carrito. Verifica el stock.";
+    }
+  });
 
   const botonCerrar = document.createElement("button");
   botonCerrar.className = "order-btn";
@@ -182,7 +236,8 @@ function mostrarModalDetalles(p) {
 
   // Armamos el contenido
   contenido.append(h2, vendedor, elab, desc, precio, stock, pago);
-  contenido.append(starsContainer, botonPedido, botonCerrar, orderFormContainer);
+  contenido.append(starsContainer, labelCantidadCarrito, inputCantidadCarrito, carritoError);
+  contenido.append(botonPedido, botonCarrito, botonCerrar, orderFormContainer);
   modal.appendChild(contenido);
   document.body.appendChild(modal);
 
@@ -407,8 +462,8 @@ function mostrarFormularioEditarProducto(p) {
   labelPrecio.textContent = "Precio:";
   const inputPrecio = document.createElement("input");
   inputPrecio.type = "number";
-  inputPrecio.id = "precio";
-  inputPrecio.value = p.price;
+  inputPrecio.id = "editPrecioProducto";
+  inputPrecio.value = p.precio;
   inputPrecio.required = true;
 
   // Cantidad
@@ -437,7 +492,7 @@ function mostrarFormularioEditarProducto(p) {
   labelPago.textContent = "Medios de Pago:";
   const inputPago = document.createElement("input");
   inputPago.type = "text";
-  inputPago.id = "pagoProducto";
+  inputPago.id = "editPagoProducto";
   inputPago.value = p.pago;
   inputPago.required = true;
 
@@ -593,14 +648,14 @@ function mostrarPerfilEnPantalla() {
   // Limpiar sección primero
   perfilSec.innerHTML = "";
 
-  // Contenedor para el ícono de notificaciones y favoritos
+  // Contenedor para el ícono de notificaciones, favoritos y carrito
   const topContainer = document.createElement("div");
   topContainer.className = "top-container";
 
   // Ícono de notificaciones
   const notificationContainer = document.createElement("div");
   notificationContainer.className = "notification-container";
-  const notificacionesNoLeidas = obtenerNotificacionesNoLeidas(userEmail); // —– NUEVO: Contar notificaciones no leídas
+  const notificacionesNoLeidas = obtenerNotificacionesNoLeidas(userEmail);
   notificationContainer.innerHTML = `
     <span id="notification-icon" style="cursor: pointer;">🔔${notificacionesNoLeidas > 0 ? `<span class="notification-count">${notificacionesNoLeidas}</span>` : ""}</span>
   `;
@@ -612,7 +667,16 @@ function mostrarPerfilEnPantalla() {
     <span id="favorites-icon" style="cursor: pointer;">♥</span>
   `;
 
-  topContainer.append(notificationContainer, favoritesContainer);
+  // Ícono de carrito
+  const carritoContainer = document.createElement("div");
+  carritoContainer.className = "notification-container"; // Reutilizamos la clase para consistencia
+  const carritoItems = obtenerCarrito(userEmail);
+  const totalItems = carritoItems.reduce((sum, item) => sum + item.cantidad, 0);
+  carritoContainer.innerHTML = `
+    <span id="carrito-icon" style="cursor: pointer;">🛒${totalItems > 0 ? `<span class="notification-count">${totalItems}</span>` : ""}</span>
+  `;
+
+  topContainer.append(notificationContainer, favoritesContainer, carritoContainer);
   perfilSec.appendChild(topContainer);
 
   // Bloque de perfil básico
@@ -710,7 +774,7 @@ function mostrarPerfilEnPantalla() {
       return;
     }
 
-    // Construimos el objeto producto (agregamos creatorEmail)
+    // Construimos el objeto producto
     const productoNuevo = {
       nombre: nombreProd,
       descripcion,
@@ -720,7 +784,7 @@ function mostrarPerfilEnPantalla() {
       vendedor,
       pago,
       categoria,
-      empresaDescripcion: "Registrado por usuario",
+      empresaExclusion: "Registrado por usuario",
       rating: [],
       image: null,
       creatorEmail: getUserEmail()  // para saber quién lo creó
@@ -759,6 +823,14 @@ function mostrarPerfilEnPantalla() {
       mostrarFavoritosDropdown();
     });
   }
+
+  // Listener para el ícono de carrito
+  const carritoIcon = document.getElementById("carrito-icon");
+  if (carritoIcon) {
+    carritoIcon.addEventListener("click", () => {
+      mostrarCarritoDropdown();
+    });
+  }
 }
 
 /**
@@ -789,7 +861,7 @@ function mostrarNotificacionesDropdown() {
   const userEmail = getUserEmail();
   const notifs = obtenerNotificaciones(userEmail);
 
-  // —– NUEVO: Marcar todas las notificaciones como leídas al abrir el modal
+  // Marcar todas las notificaciones como leídas al abrir el modal
   if (userEmail && notifs.length > 0) {
     notifs.forEach((n, index) => {
       if (!n.leida) {
@@ -897,7 +969,7 @@ function mostrarFavoritosDropdown() {
 
   if (!userEmail) {
     const p = document.createElement("p");
-    p.className = "product-card";
+    p.className = "notification-card";
     p.textContent = "Debes iniciar sesión para ver tus favoritos.";
     contenido.appendChild(p);
   } else if (favoritos.length > 0) {
@@ -905,7 +977,7 @@ function mostrarFavoritosDropdown() {
       const p = listaAll.find(prod => prod.nombre === nombre);
       if (p) {
         const div = document.createElement("div");
-        div.className = "product-card";
+        div.className = "notification-card";
         div.innerHTML = `
           <div class="image-container">
             <img src="${p.image || 'assets/placeholder.png'}" alt="${p.image ? p.nombre : 'sin imagen'}">
@@ -914,35 +986,19 @@ function mostrarFavoritosDropdown() {
             <h2 class="product-title">${p.nombre}</h2>
             <p><strong>Vendedor:</strong> ${p.vendedor}</p>
             <p><strong>Descripción:</strong> ${p.descripcion}</p>
-            <p><strong>Elaboración:</strong> ${p.elaboracion}</p>
-            <p><strong>Precio:</strong> $${p.precio}</p>
-            <p><strong>Unidades Disponibles:</strong> ${p.cantidad}</p>
-            <p><strong>Pago:</strong> ${p.pago}</p>
           </div>
         `;
         div.addEventListener("click", (e) => {
           e.stopPropagation();
-          cerrarModal(); // Cerrar el modal actual
-          mostrarOrderForm(p);
-        });
-        // Botón Quitar de Favoritos
-        const botonQuitar = document.createElement("button");
-        botonQuitar.className = "order-btn favorite-btn favorited";
-        botonQuitar.textContent = "★ Quitar de Favoritos";
-        botonQuitar.addEventListener("click", (e) => {
-          e.stopPropagation();
-          eliminarFavorito(userEmail, p.nombre);
           cerrarModal();
-          mostrarPerfilEnPantalla(); // Recargar vista de perfil
-          mostrarFavoritosDropdown(); // Reabrir el modal con favoritos actualizados
+          mostrarModalDetalles(p);
         });
-        div.appendChild(botonQuitar);
         contenido.appendChild(div);
       }
     });
   } else {
     const p = document.createElement("p");
-    p.className = "product-card";
+    p.className = "notification-card";
     p.textContent = "No tienes productos favoritos.";
     contenido.appendChild(p);
   }
@@ -959,4 +1015,259 @@ function mostrarFavoritosDropdown() {
 
   // Enfocar el botón Cerrar
   botonCerrar.focus();
+}
+
+/**
+ * Muestra el carrito de compras en un modal
+ */
+function mostrarCarritoDropdown() {
+  // Si ya hay un modal abierto, lo cerramos
+  const existente = document.getElementById("modal");
+  if (existente) existente.remove();
+
+  // Fondo del modal
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.id = "modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+
+  // Contenido del modal
+  const contenido = document.createElement("div");
+  contenido.className = "modal-content";
+
+  // Título
+  const h2 = document.createElement("h2");
+  h2.textContent = "Carrito de Compras";
+
+  contenido.appendChild(h2);
+
+  const userEmail = getUserEmail();
+  const carrito = obtenerCarrito(userEmail);
+  const productos = obtenerProductos();
+  let totalCarrito = 0;
+
+  if (carrito.length === 0) {
+    const p = document.createElement("p");
+    p.className = "notification-card";
+    p.textContent = "Tu carrito está vacío.";
+    contenido.appendChild(p);
+  } else {
+    carrito.forEach((item, index) => {
+      const producto = productos.find(p => p.nombre === item.producto);
+      if (producto) {
+        const subtotal = producto.precio * item.cantidad;
+        totalCarrito += subtotal;
+
+        const div = document.createElement("div");
+        div.className = "notification-card";
+        const infoDiv = document.createElement("div");
+        infoDiv.className = "notification-info";
+        infoDiv.innerHTML = `
+          <p><strong>Producto:</strong> ${producto.nombre}</p>
+          <p><strong>Precio Unitario:</strong> $${producto.precio}</p>
+          <p><strong>Cantidad:</strong> ${item.cantidad}</p>
+          <p><strong>Subtotal:</strong> $${subtotal}</p>
+        `;
+
+        const buttonDiv = document.createElement("div");
+        buttonDiv.className = "notification-actions";
+
+        // Botones para modificar cantidad
+        const btnMenos = document.createElement("button");
+        btnMenos.className = "carrito-cantidad-btn";
+        btnMenos.textContent = "-";
+        btnMenos.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const nuevaCantidad = item.cantidad - 1;
+          if (nuevaCantidad >= 1) {
+            actualizarCantidadCarrito(userEmail, item.producto, nuevaCantidad);
+            cerrarModal();
+            mostrarCarritoDropdown();
+            mostrarPerfilEnPantalla(); // Actualizar contador
+          }
+        });
+
+        const btnMas = document.createElement("button");
+        btnMas.className = "carrito-cantidad-btn";
+        btnMas.textContent = "+";
+        btnMas.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const nuevaCantidad = item.cantidad + 1;
+          const exito = actualizarCantidadCarrito(userEmail, item.producto, nuevaCantidad);
+          if (exito) {
+            cerrarModal();
+            mostrarCarritoDropdown();
+            mostrarPerfilEnPantalla(); // Actualizar contador
+          } else {
+            alert("No hay suficiente stock para aumentar la cantidad.");
+          }
+        });
+
+        // Botón eliminar
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "order-btn delete-carrito";
+        deleteButton.setAttribute("data-index", index);
+        deleteButton.textContent = "Eliminar";
+        deleteButton.addEventListener("click", (e) => {
+          e.stopPropagation();
+          eliminarDelCarrito(userEmail, item.producto);
+          cerrarModal();
+          mostrarCarritoDropdown();
+          mostrarPerfilEnPantalla(); // Actualizar contador
+        });
+
+        buttonDiv.append(btnMenos, btnMas, deleteButton);
+        div.appendChild(infoDiv);
+        div.appendChild(buttonDiv);
+        contenido.appendChild(div);
+      }
+    });
+
+    // Mostrar total del carrito
+    const totalDiv = document.createElement("div");
+    totalDiv.className = "carrito-total";
+    totalDiv.textContent = `Total: $${totalCarrito}`;
+    contenido.appendChild(totalDiv);
+
+    // Botón para finalizar compra
+    const btnFinalizar = document.createElement("button");
+    btnFinalizar.className = "order-btn";
+    btnFinalizar.textContent = "Finalizar Compra";
+    btnFinalizar.addEventListener("click", () => {
+      const formContainer = document.createElement("div");
+      formContainer.id = "carritoFormContainer";
+      contenido.appendChild(formContainer);
+      mostrarFormularioFinalizarCompra(formContainer, userEmail);
+    });
+    contenido.appendChild(btnFinalizar);
+  }
+
+  // Botón Cerrar
+  const botonCerrar = document.createElement("button");
+  botonCerrar.className = "order-btn";
+  botonCerrar.textContent = "Cerrar";
+  botonCerrar.addEventListener("click", () => cerrarModal());
+  contenido.appendChild(botonCerrar);
+
+  modal.appendChild(contenido);
+  document.body.appendChild(modal);
+
+  // Enfocar el botón Cerrar
+  botonCerrar.focus();
+}
+
+/**
+ * Muestra el formulario para finalizar la compra del carrito
+ * @param {HTMLElement} cont - Contenedor donde se inyectará el formulario
+ * @param {string|null} userEmail - Email del usuario o null para invitado
+ */
+function mostrarFormularioFinalizarCompra(cont, userEmail) {
+  cont.innerHTML = "";
+
+  const form = document.createElement("form");
+  form.className = "order-form";
+
+  // Nombre Cliente
+  const labelCliente = document.createElement("label");
+  labelCliente.setAttribute("for", "clienteCarrito");
+  labelCliente.textContent = "Nombre Cliente:";
+  const inputCliente = document.createElement("input");
+  inputCliente.type = "text";
+  inputCliente.id = "clienteCarrito";
+  inputCliente.name = "cliente";
+  inputCliente.required = true;
+
+  // Teléfono
+  const labelTelefono = document.createElement("label");
+  labelTelefono.setAttribute("for", "telefonoCarrito");
+  labelTelefono.textContent = "Número de Celular:";
+  const inputTelefono = document.createElement("input");
+  inputTelefono.type = "tel";
+  inputTelefono.id = "telefonoCarrito";
+  inputTelefono.name = "telefono";
+  inputTelefono.required = true;
+
+  // Dirección
+  const labelDireccion = document.createElement("label");
+  labelDireccion.setAttribute("for", "direccionCarrito");
+  labelDireccion.textContent = "Dirección:";
+  const inputDireccion = document.createElement("input");
+  inputDireccion.type = "text";
+  inputDireccion.id = "direccionCarrito";
+  inputDireccion.name = "direccion";
+  inputDireccion.required = true;
+
+  // Detalle Pedido
+  const labelDetalle = document.createElement("label");
+  labelDetalle.setAttribute("for", "detalleCarrito");
+  labelDetalle.textContent = "Detalle Pedido:";
+  const textareaDetalle = document.createElement("textarea");
+  textareaDetalle.id = "detalleCarrito";
+  textareaDetalle.name = "detalle";
+
+  // Método de Pago
+  const labelPago = document.createElement("label");
+  labelPago.setAttribute("for", "metodoPagoCarrito");
+  labelPago.textContent = "Método de Pago:";
+  const selectPago = document.createElement("select");
+  selectPago.id = "metodoPagoCarrito";
+  selectPago.name = "metodoPago";
+  ["Transferencia Nequi", "Transferencia Daviplata", "Bancolombia", "PSE", "Débito/Crédito"]
+    .forEach(opt => {
+      const o = document.createElement("option");
+      o.textContent = opt;
+      selectPago.appendChild(o);
+    });
+
+  // Mensaje de error
+  const stockError = document.createElement("p");
+  stockError.id = "carritoStockError";
+  stockError.className = "stock-error";
+  stockError.style.color = "red";
+
+  // Botón Guardar Pedido
+  const botonGuardar = document.createElement("button");
+  botonGuardar.type = "submit";
+  botonGuardar.className = "order-btn";
+  botonGuardar.textContent = "Confirmar Compra";
+
+  // Agregar todos los inputs al form
+  form.append(
+    labelCliente, inputCliente,
+    labelTelefono, inputTelefono,
+    labelDireccion, inputDireccion,
+    labelDetalle, textareaDetalle,
+    labelPago, selectPago,
+    stockError,
+    botonGuardar
+  );
+
+  // Al enviar el form, procesar todos los ítems del carrito
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    const datosPedido = {
+      cliente: inputCliente.value.trim(),
+      telefono: inputTelefono.value.trim(),
+      direccion: inputDireccion.value.trim(),
+      detalle: textareaDetalle.value.trim(),
+      metodoPago: selectPago.value
+    };
+
+    const exito = finalizarCompraCarrito(userEmail, datosPedido);
+    cont.innerHTML = ""; // Borrar el formulario
+    const resDiv = document.createElement("div");
+    if (exito) {
+      resDiv.className = "order-result success";
+      resDiv.innerHTML = `<div class="icon">✓</div>Compra Exitosa`;
+      recargarVistaProductos();
+      mostrarPerfilEnPantalla(); // Actualizar contador
+    } else {
+      resDiv.className = "order-result failure";
+      resDiv.innerHTML = `<div class="icon">✖</div>Compra Fallida. Verifica el stock.`;
+    }
+    cont.appendChild(resDiv);
+  });
+
+  cont.appendChild(form);
 }

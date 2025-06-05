@@ -12,7 +12,7 @@
 const NOTIF_KEY = "notifications";
 
 /**
- * —– NUEVO: Clave de almacenamiento de FAVORITOS
+ * Clave de almacenamiento de FAVORITOS
  * Estructura en localStorage (key = FAVORITES_KEY):
  * {
  *   "emailUsuario1": [ "nombreProducto1", "nombreProducto2", ... ],
@@ -21,6 +21,17 @@ const NOTIF_KEY = "notifications";
  * }
  */
 const FAVORITES_KEY = "favorites";
+
+/**
+ * AÑADIDO: Clave de almacenamiento del CARRITO
+ * Estructura en localStorage (key = CART_KEY):
+ * {
+ *   "emailUsuario1": [ { producto: nombreProducto, cantidad }, ... ],
+ *   "emailUsuario2": [ ... ],
+ *   "invitado": [ ... ]
+ * }
+ */
+const CART_KEY = "cart";
 
 /**
  * Retorna el arreglo completo de productos desde localStorage.
@@ -98,7 +109,7 @@ function procesarPedido(nombre, cantidad, datosPedido) {
         direccion: datosPedido.direccion,
         detalle: datosPedido.detalle || "",
         metodoPago: datosPedido.metodoPago,
-        leida: false // —– NUEVO: Marcar notificación como no leída
+        leida: false // Marcar notificación como no leída
       });
       // guardo de vuelta
       todasNotifs[ownerEmail] = notifsUsuario;
@@ -158,7 +169,7 @@ function eliminarNotificacion(emailUsuario, index) {
 }
 
 /**
- * —– NUEVO: Busca productos por término de búsqueda y categoría.
+ * Busca productos por término de búsqueda y categoría.
  * @param {string} searchTerm - Término de búsqueda
  * @param {string} category - Categoría seleccionada ("all" o específica)
  * @returns {Array} Lista de productos filtrados
@@ -182,7 +193,7 @@ function buscarProductos(searchTerm, category) {
 }
 
 /**
- * —– NUEVO: Actualiza un producto existente en localStorage basado en su nombre.
+ * Actualiza un producto existente en localStorage basado en su nombre.
  * @param {string} nombre - Nombre del producto a editar
  * @param {Object} nuevosDatos - Objeto con los nuevos datos del producto
  */
@@ -210,7 +221,7 @@ function editarProducto(nombre, nuevosDatos) {
 }
 
 /**
- * —– NUEVO: Agrega un producto a la lista de favoritos de un usuario.
+ * Agrega un producto a la lista de favoritos de un usuario.
  * @param {string} emailUsuario - Email del usuario
  * @param {string} nombreProducto - Nombre del producto a agregar
  * @returns {boolean} - true si se agregó, false si ya estaba en favoritos
@@ -228,7 +239,7 @@ function agregarFavorito(emailUsuario, nombreProducto) {
 }
 
 /**
- * —– NUEVO: Elimina un producto de la lista de favoritos de un usuario.
+ * Elimina un producto de la lista de favoritos de un usuario.
  * @param {string} emailUsuario - Email del usuario
  * @param {string} nombreProducto - Nombre del producto a eliminar
  * @returns {boolean} - true si se eliminó, false si no estaba en favoritos
@@ -250,7 +261,7 @@ function eliminarFavorito(emailUsuario, nombreProducto) {
 }
 
 /**
- * —– NUEVO: Obtiene la lista de nombres de productos favoritos de un usuario.
+ * Obtiene la lista de nombres de productos favoritos de un usuario.
  * @param {string} emailUsuario - Email del usuario
  * @returns {Array} - Lista de nombres de productos favoritos
  */
@@ -260,7 +271,7 @@ function obtenerFavoritos(emailUsuario) {
 }
 
 /**
- * —– NUEVO: Marca una notificación como leída
+ * Marca una notificación como leída
  * @param {string} emailUsuario - Email del usuario
  * @param {number} index - Índice de la notificación a marcar
  */
@@ -275,11 +286,149 @@ function marcarNotificacionLeida(emailUsuario, index) {
 }
 
 /**
- * —– NUEVO: Obtiene el número de notificaciones no leídas de un usuario
+ * Obtiene el número de notificaciones no leídas de un usuario
  * @param {string} emailUsuario - Email del usuario
  * @returns {number} - Cantidad de notificaciones no leídas
  */
 function obtenerNotificacionesNoLeidas(emailUsuario) {
   const notifs = obtenerNotificaciones(emailUsuario);
   return notifs.filter(n => !n.leida).length;
+}
+
+/**
+ * AÑADIDO: Agrega un producto al carrito de un usuario (o invitado).
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ * @param {string} nombreProducto - Nombre del producto
+ * @param {number} cantidad - Cantidad a agregar
+ * @returns {boolean} - true si se agregó/actualizó, false si no hay stock suficiente
+ */
+function agregarAlCarrito(emailUsuario, nombreProducto, cantidad) {
+  const productos = obtenerProductos();
+  const producto = productos.find(p => p.nombre === nombreProducto);
+  if (!producto || producto.cantidad < cantidad) {
+    return false; // No hay stock suficiente
+  }
+
+  const key = emailUsuario || "invitado";
+  const carritos = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  const carritoUsuario = carritos[key] || [];
+
+  const idx = carritoUsuario.findIndex(item => item.producto === nombreProducto);
+  if (idx > -1) {
+    // Actualizar cantidad si el producto ya está en el carrito
+    const nuevaCantidad = carritoUsuario[idx].cantidad + cantidad;
+    if (nuevaCantidad > producto.cantidad) {
+      return false; // No hay stock suficiente
+    }
+    carritoUsuario[idx].cantidad = nuevaCantidad;
+  } else {
+    // Agregar nuevo producto al carrito
+    carritoUsuario.push({ producto: nombreProducto, cantidad });
+  }
+
+  carritos[key] = carritoUsuario;
+  localStorage.setItem(CART_KEY, JSON.stringify(carritos));
+  return true;
+}
+
+/**
+ * AÑADIDO: Obtiene el carrito de un usuario (o invitado).
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ * @returns {Array} - Lista de ítems en el carrito [{ producto, cantidad }, ...]
+ */
+function obtenerCarrito(emailUsuario) {
+  const key = emailUsuario || "invitado";
+  const carritos = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  return carritos[key] || [];
+}
+
+/**
+ * AÑADIDO: Actualiza la cantidad de un producto en el carrito.
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ * @param {string} nombreProducto - Nombre del producto
+ * @param {number} nuevaCantidad - Nueva cantidad
+ * @returns {boolean} - true si se actualizó, false si no es válido
+ */
+function actualizarCantidadCarrito(emailUsuario, nombreProducto, nuevaCantidad) {
+  const productos = obtenerProductos();
+  const producto = productos.find(p => p.nombre === nombreProducto);
+  if (!producto || nuevaCantidad < 1 || nuevaCantidad > producto.cantidad) {
+    return false; // Cantidad inválida o sin stock
+  }
+
+  const key = emailUsuario || "invitado";
+  const carritos = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  const carritoUsuario = carritos[key] || [];
+
+  const idx = carritoUsuario.findIndex(item => item.producto === nombreProducto);
+  if (idx > -1) {
+    carritoUsuario[idx].cantidad = nuevaCantidad;
+    carritos[key] = carritoUsuario;
+    localStorage.setItem(CART_KEY, JSON.stringify(carritos));
+    return true;
+  }
+  return false;
+}
+
+/**
+ * AÑADIDO: Elimina un producto del carrito.
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ * @param {string} nombreProducto - Nombre del producto
+ * @returns {boolean} - true si se eliminó, false si no estaba en el carrito
+ */
+function eliminarDelCarrito(emailUsuario, nombreProducto) {
+  const key = emailUsuario || "invitado";
+  const carritos = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  const carritoUsuario = carritos[key] || [];
+
+  const idx = carritoUsuario.findIndex(item => item.producto === nombreProducto);
+  if (idx === -1) {
+    return false; // No está en el carrito
+  }
+
+  carritoUsuario.splice(idx, 1);
+  carritos[key] = carritoUsuario;
+  if (carritoUsuario.length === 0) {
+    delete carritos[key]; // Eliminar la clave si el carrito está vacío
+  }
+  localStorage.setItem(CART_KEY, JSON.stringify(carritos));
+  return true;
+}
+
+/**
+ * AÑADIDO: Finaliza la compra procesando todos los ítems del carrito.
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ * @param {Object} datosPedido - Incluye cliente, telefono, direccion, detalle, metodoPago
+ * @returns {boolean} - true si todos los pedidos fueron exitosos, false si alguno falló
+ */
+function finalizarCompraCarrito(emailUsuario, datosPedido) {
+  const carrito = obtenerCarrito(emailUsuario);
+  if (carrito.length === 0) {
+    return false; // Carrito vacío
+  }
+
+  let todosExitosos = true;
+  for (const item of carrito) {
+    const exito = procesarPedido(item.producto, item.cantidad, datosPedido);
+    if (!exito) {
+      todosExitosos = false;
+    }
+  }
+
+  if (todosExitosos) {
+    // Vaciar el carrito si todos los pedidos fueron exitosos
+    vaciarCarrito(emailUsuario);
+  }
+  return todosExitosos;
+}
+
+/**
+ * AÑADIDO: Vacía el carrito de un usuario (o invitado).
+ * @param {string|null} emailUsuario - Email del usuario o null para invitado
+ */
+function vaciarCarrito(emailUsuario) {
+  const key = emailUsuario || "invitado";
+  const carritos = JSON.parse(localStorage.getItem(CART_KEY)) || {};
+  delete carritos[key];
+  localStorage.setItem(CART_KEY, JSON.stringify(carritos));
 }
