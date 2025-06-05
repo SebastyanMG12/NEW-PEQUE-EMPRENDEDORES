@@ -407,8 +407,8 @@ function mostrarFormularioEditarProducto(p) {
   labelPrecio.textContent = "Precio:";
   const inputPrecio = document.createElement("input");
   inputPrecio.type = "number";
-  inputPrecio.id = "editPrecioProducto";
-  inputPrecio.value = p.precio;
+  inputPrecio.id = "precio";
+  inputPrecio.value = p.price;
   inputPrecio.required = true;
 
   // Cantidad
@@ -437,7 +437,7 @@ function mostrarFormularioEditarProducto(p) {
   labelPago.textContent = "Medios de Pago:";
   const inputPago = document.createElement("input");
   inputPago.type = "text";
-  inputPago.id = "editPagoProducto";
+  inputPago.id = "pagoProducto";
   inputPago.value = p.pago;
   inputPago.required = true;
 
@@ -600,8 +600,9 @@ function mostrarPerfilEnPantalla() {
   // Ícono de notificaciones
   const notificationContainer = document.createElement("div");
   notificationContainer.className = "notification-container";
+  const notificacionesNoLeidas = obtenerNotificacionesNoLeidas(userEmail); // —– NUEVO: Contar notificaciones no leídas
   notificationContainer.innerHTML = `
-    <span id="notification-icon" style="cursor: pointer;">🔔</span>
+    <span id="notification-icon" style="cursor: pointer;">🔔${notificacionesNoLeidas > 0 ? `<span class="notification-count">${notificacionesNoLeidas}</span>` : ""}</span>
   `;
 
   // Ícono de favoritos
@@ -787,6 +788,15 @@ function mostrarNotificacionesDropdown() {
 
   const userEmail = getUserEmail();
   const notifs = obtenerNotificaciones(userEmail);
+
+  // —– NUEVO: Marcar todas las notificaciones como leídas al abrir el modal
+  if (userEmail && notifs.length > 0) {
+    notifs.forEach((n, index) => {
+      if (!n.leida) {
+        marcarNotificacionLeida(userEmail, index);
+      }
+    });
+  }
 
   if (!userEmail) {
     const p = document.createElement("p");

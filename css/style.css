@@ -1,3 +1,4 @@
+
 /* css/style.css */
 
 body {
@@ -131,7 +132,7 @@ nav a:hover {
 
 input, textarea, select {
   width: 100%;
-  padding: 10px;
+  padding: 15px;
   border-radius: 20px;
   border: 2px solid #071739;
   margin-bottom: 15px;
@@ -180,10 +181,10 @@ img.product-image {
 }
 
 .modal-content .product-card .image-container {
-  flex: 0 0 150px;
+  flex: 0 1 150px;
 }
 .modal-content .product-card .image-container img {
-  width: 100%;
+  max-width: 100%;
   height: auto;
   border-radius: 20px;
 }
@@ -282,4 +283,17 @@ section.active {
   border: 2px solid #071739;
   font-size: 16px;
   background-color: #fff;
+}
+
+/* —– NUEVO: Estilo para el contador de notificaciones */
+.notification-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #d32f2f;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
 }

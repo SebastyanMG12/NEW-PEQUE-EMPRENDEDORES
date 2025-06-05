@@ -4,7 +4,7 @@
  * Clave de almacenamiento de NOTIFICACIONES
  * Estructura en localStorage (key = NOTIF_KEY):
  * {
- *   "emailUsuario1": [ { producto, cantidad, comprador, fecha, cliente, telefono, direccion, detalle, metodoPago }, ... ],
+ *   "emailUsuario1": [ { producto, cantidad, comprador, fecha, cliente, telefono, direccion, detalle, metodoPago, leida }, ... ],
  *   "emailUsuario2": [ ... ],
  *   ...
  * }
@@ -97,7 +97,8 @@ function procesarPedido(nombre, cantidad, datosPedido) {
         telefono: datosPedido.telefono,
         direccion: datosPedido.direccion,
         detalle: datosPedido.detalle || "",
-        metodoPago: datosPedido.metodoPago
+        metodoPago: datosPedido.metodoPago,
+        leida: false // —– NUEVO: Marcar notificación como no leída
       });
       // guardo de vuelta
       todasNotifs[ownerEmail] = notifsUsuario;
@@ -256,4 +257,29 @@ function eliminarFavorito(emailUsuario, nombreProducto) {
 function obtenerFavoritos(emailUsuario) {
   const favoritos = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || {};
   return favoritos[emailUsuario] || [];
+}
+
+/**
+ * —– NUEVO: Marca una notificación como leída
+ * @param {string} emailUsuario - Email del usuario
+ * @param {number} index - Índice de la notificación a marcar
+ */
+function marcarNotificacionLeida(emailUsuario, index) {
+  const todasNotifs = JSON.parse(localStorage.getItem(NOTIF_KEY)) || {};
+  const notifsUsuario = todasNotifs[emailUsuario] || [];
+  if (index >= 0 && index < notifsUsuario.length) {
+    notifsUsuario[index].leida = true;
+    todasNotifs[emailUsuario] = notifsUsuario;
+    localStorage.setItem(NOTIF_KEY, JSON.stringify(todasNotifs));
+  }
+}
+
+/**
+ * —– NUEVO: Obtiene el número de notificaciones no leídas de un usuario
+ * @param {string} emailUsuario - Email del usuario
+ * @returns {number} - Cantidad de notificaciones no leídas
+ */
+function obtenerNotificacionesNoLeidas(emailUsuario) {
+  const notifs = obtenerNotificaciones(emailUsuario);
+  return notifs.filter(n => !n.leida).length;
 }
